@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-func hasLabel(label string) predicate.Predicate {
+func HasLabel(label string) predicate.Predicate {
 	return predicate.NewPredicateFuncs(func(o client.Object) bool {
 		return o.GetLabels()[label] != ""
 	})
@@ -40,7 +40,7 @@ func New(client client.Client, logger logr.Logger) *Filter {
 func (f *Filter) ModuleReconcilerNodePredicate(kernelLabel string) predicate.Predicate {
 	return predicate.And(
 		skipDeletions,
-		hasLabel(kernelLabel),
+		HasLabel(kernelLabel),
 		predicate.LabelChangedPredicate{},
 	)
 }

@@ -171,7 +171,10 @@ var _ = Describe("SetDriverContainerAsDesired", func() {
 			Spec: appsv1.DaemonSetSpec{
 				Selector: &metav1.LabelSelector{MatchLabels: podLabels},
 				Template: v1.PodTemplateSpec{
-					ObjectMeta: metav1.ObjectMeta{Labels: podLabels},
+					ObjectMeta: metav1.ObjectMeta{
+						Finalizers: []string{constants.NodeLabelerFinalizer},
+						Labels:     podLabels,
+					},
 					Spec: v1.PodSpec{
 						Containers: []v1.Container{
 							{

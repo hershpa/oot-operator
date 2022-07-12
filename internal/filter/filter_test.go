@@ -25,7 +25,7 @@ var (
 	clnt *mockClient.MockClient
 )
 
-var _ = Describe("hasLabel", func() {
+var _ = Describe("HasLabel", func() {
 	const label = "test-label"
 
 	dsWithEmptyLabel := &appsv1.DaemonSet{
@@ -43,7 +43,7 @@ var _ = Describe("hasLabel", func() {
 	DescribeTable("Should return the expected value",
 		func(obj client.Object, expected bool) {
 			Expect(
-				hasLabel(label).Delete(event.DeleteEvent{Object: obj}),
+				HasLabel(label).Delete(event.DeleteEvent{Object: obj}),
 			).To(
 				Equal(expected),
 			)

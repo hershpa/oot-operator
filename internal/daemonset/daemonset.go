@@ -124,6 +124,10 @@ func (dc *daemonSetGenerator) SetDriverContainerAsDesired(ctx context.Context, d
 		dc.kernelLabel:            kernelVersion,
 	}
 
+	ds.SetLabels(
+		OverrideLabels(ds.GetLabels(), standardLabels),
+	)
+
 	nodeSelector := CopyMapStringString(mod.Spec.Selector)
 	nodeSelector[dc.kernelLabel] = kernelVersion
 
@@ -162,8 +166,28 @@ func (dc *daemonSetGenerator) SetDriverContainerAsDesired(ctx context.Context, d
 		},
 	}
 
-	return dc.constructDaemonSet(ctx, ds, &mod, mod.Spec.DriverContainer, "driver-container", image, standardLabels,
-		nodeSelector, driverContainerVolumeMounts, volumes, false)
+	container := mod.Spec.DriverContainer
+	container.Name = "driver-container"
+	container.Image = image
+	container.VolumeMounts = append(container.VolumeMounts, driverContainerVolumeMounts...)
+
+	ds.Spec = appsv1.DaemonSetSpec{
+		Template: v1.PodTemplateSpec{
+			ObjectMeta: metav1.ObjectMeta{
+				Labels:     standardLabels,
+				Finalizers: []string{constants.NodeLabelerFinalizer},
+			},
+			Spec: v1.PodSpec{
+				Containers:         []v1.Container{container},
+				NodeSelector:       nodeSelector,
+				ServiceAccountName: mod.Spec.ServiceAccountName,
+				Volumes:            append(volumes, mod.Spec.AdditionalVolumes...),
+			},
+		},
+		Selector: &metav1.LabelSelector{MatchLabels: standardLabels},
+	}
+
+	return controllerutil.SetControllerReference(&mod, ds, dc.scheme)
 }
 
 func (dc *daemonSetGenerator) SetDevicePluginAsDesired(ctx context.Context, ds *appsv1.DaemonSet, mod *ootov1alpha1.Module) error {
@@ -271,4 +295,16 @@ func CopyMapStringString(m map[string]string) map[string]string {
 	}
 
 	return n
+}
+
+func OverrideLabels(labels, overrides map[string]string) map[string]string {
+	if labels == nil {
+		labels = make(map[string]string, len(overrides))
+	}
+
+	for k, v := range overrides {
+		labels[k] = v
+	}
+
+	return labels
 }
